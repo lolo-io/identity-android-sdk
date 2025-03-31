@@ -14,7 +14,7 @@ buildscript {
                 result               : "com.github.kittinunf.result:result:5.2.0",
                 retrofit             : "com.squareup.retrofit2:retrofit:2.9.0",
                 retrofitConverterGson: "com.squareup.retrofit2:converter-gson:2.9.0",
-                browser              : "androidx.browser:browser:1.8.0",
+                browser              : "androidx.browser:browser:1.9.0-alpha01",
         ]
     }
 
@@ -33,29 +33,18 @@ buildscript {
 }
 
 plugins {
-    id "io.github.gradle-nexus.publish-plugin" version "1.3.0"
+    id 'maven-publish'
     id "com.github.ben-manes.versions" version "0.51.0"
 }
 
 apply from: rootProject.file("libversion.gradle")
 apply from: rootProject.file("signingkey.gradle")
 
-group = "co.reachfive.identity"
+group = "co.reachfive.identity.custom"
 if (project.hasProperty("snapshot")) {
     version = libversion + "-SNAPSHOT"
 } else {
     version = libversion
-}
-
-nexusPublishing {
-    repositories {
-        sonatype {
-            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
-            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
-            username = ossrhUsername
-            password = ossrhPassword
-        }
-    }
 }
 
 subprojects {
@@ -92,8 +81,28 @@ subprojects {
         }
     }
 
+
+    def localPropertiesFile = new File(rootDir, "local.properties")
+    def localProperties = new Properties()
+    localPropertiesFile.withInputStream { stream ->
+        localProperties.load(stream)
+    }
+
+
     afterEvaluate {
         publishing {
+            repositories {
+                maven {
+                    name = "Maven"
+                    url = uri(localProperties.getProperty("mvn-url"))
+                    credentials {
+                        username = localProperties.getProperty("mvn-username")
+                        password = localProperties.getProperty("mvn-password")
+                    }
+
+                }
+            }
+
             publications {
                 release(MavenPublication) {
                     from components.release
@@ -128,7 +137,9 @@ subprojects {
                             }
                         }
                     }
+
                 }
+
             }
         }
 
