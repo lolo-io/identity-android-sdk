@@ -14,7 +14,7 @@ buildscript {
                 result               : "com.github.kittinunf.result:result:5.6.0",
                 retrofit             : "com.squareup.retrofit2:retrofit:2.12.0",
                 retrofitConverterGson: "com.squareup.retrofit2:converter-gson:2.12.0",
-                browser              : "androidx.browser:browser:1.8.0",
+                browser              : "androidx.browser:browser:1.9.0-alpha01",
         ]
     }
 
@@ -39,7 +39,7 @@ plugins {
 apply from: rootProject.file("libversion.gradle")
 apply from: rootProject.file("signingkey.gradle")
 
-group = "co.reachfive.identity"
+group = "co.reachfive.identity.custom"
 if (project.hasProperty("snapshot")) {
     version = libversion + "-SNAPSHOT"
 } else {
@@ -75,8 +75,8 @@ subprojects {
         }
 
         defaultConfig {
-            minSdkVersion = androidSettings.min_sdk_version
-            targetSdkVersion = androidSettings.target_sdk_version
+            minSdkVersion  androidSettings.min_sdk_version
+            targetSdkVersion  androidSettings.target_sdk_version
             versionCode = androidSettings.version_code
             versionName = this.version
             buildConfigField("String", "r5_sdk_version", "\"$libversion\"")
@@ -84,100 +84,84 @@ subprojects {
 
         buildTypes {
             release {
-                minifyEnabled = false
-                proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+                minifyEnabled false
+                proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             }
         }
 
         lintOptions {
-            abortOnError = false
+            abortOnError false
         }
     }
 
+
+    def localPropertiesFile = new File(rootDir, "local.properties")
+    def localProperties = new Properties()
+    localPropertiesFile.withInputStream { stream ->
+        localProperties.load(stream)
+    }
+
+
     afterEvaluate {
         publishing {
+            repositories {
+                maven {
+                    name = "Maven"
+                    url = uri(localProperties.getProperty("mvn-url"))
+                    credentials {
+                        username = localProperties.getProperty("mvn-username")
+                        password = localProperties.getProperty("mvn-password")
+                    }
+
+                }
+            }
+
             publications {
                 release(MavenPublication) {
-                    from(components.release)
+                    from components.release
 
                     pom {
-                        name = "ReachFive"
-                        description = "SDK"
-                        inceptionYear = "2019"
-                        url = "https://github.com/ReachFive/identity-android-sdk"
+                        name = 'ReachFive'
+                        description = 'SDK'
+                        inceptionYear = '2019'
+                        url = 'https://github.com/ReachFive/identity-android-sdk'
 
                         groupId = this.group
                         version = this.version
-                        packaging = "aar"
+                        packaging = 'aar'
 
                         licenses {
                             license {
-                                name = "The MIT License (MIT)"
-                                url = "https://opensource.org/licenses/MIT"
+                                name = 'The MIT License (MIT)'
+                                url = 'https://opensource.org/licenses/MIT'
                             }
                         }
 
                         scm {
-                            connection = "https://github.com/ReachFive/identity-android-sdk.git"
-                            url = "https://github.com/ReachFive/identity-android-sdk"
+                            connection = 'https://github.com/ReachFive/identity-android-sdk.git'
+                            url = 'https://github.com/ReachFive/identity-android-sdk'
 
                         }
 
                         developers {
                             developer {
-                                id = "reachfive"
-                                name = "Reachfive"
+                                id = 'reachfive'
+                                name = 'Reachfive'
                             }
                         }
                     }
-                }
-            }
 
-            repositories {
-                maven {
-                    name = "localStaging"
-                    url = layout.buildDirectory.dir("staging-deploy")
                 }
-                maven {
-                    name = "sonatypeSnapshots"
-                    url = "https://central.sonatype.com/repository/maven-snapshots/"
-                    credentials {
-                        username = sonatypeUsername
-                        password = sonatypePassword
-                    }
-                }
+
             }
         }
 
         if (signingKey != null) {
             signing {
-                useInMemoryPgpKeys(signingKey, signingKeyPassphrase)
-                sign(publishing.publications.release)
-            }
-        }
-
-        jreleaser {
-            signing {
-                active = "ALWAYS"
-                armored = true
-                passphrase = signingKeyPassphrase
-                secretKey = signingKey
-                publicKey = signingKeyPublic
-            }
-            deploy {
-                maven {
-                    mavenCentral {
-                        sonatype {
-                            active = "RELEASE"
-                            url = "https://central.sonatype.com/api/v1/publisher"
-                            stagingRepository(layout.buildDirectory.dir("staging-deploy").get().toString())
-                            username = sonatypeUsername
-                            password = sonatypePassword
-                            verifyPom = false
-                        }
-                    }
-                }
+                useInMemoryPgpKeys(signingKey, signingKeyPwd)
+                sign publishing.publications.release
             }
         }
     }
 }
+

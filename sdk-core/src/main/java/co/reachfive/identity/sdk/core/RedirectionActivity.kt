@@ -10,6 +10,8 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.activity.ComponentActivity
+import androidx.annotation.OptIn
+import androidx.browser.customtabs.ExperimentalEphemeralBrowsing
 import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebViewClientCompat
 import androidx.webkit.WebViewCompat
@@ -73,12 +75,14 @@ class RedirectionActivity : ComponentActivity() {
             launchCustomTab(urlString, codeVerifier)
     }
 
+    @OptIn(ExperimentalEphemeralBrowsing::class)
     private fun launchCustomTab(urlString: String?, codeVerifier: String?) {
         Log.d(TAG, "RedirectionActivity launchCustomTab url: $urlString")
 
         isCustomTabFlow = true
 
-        val customTabsIntent = CustomTabsIntent.Builder().build().intent
+        val customTabsIntent = CustomTabsIntent.Builder()
+            .setEphemeralBrowsingEnabled(true).build().intent
         customTabsIntent.data = Uri.parse(urlString)
         customTabsIntent.putExtra(CODE_VERIFIER_KEY, codeVerifier)
 
